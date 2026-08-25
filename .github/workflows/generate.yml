@@ -1,46 +1,46 @@
-name: Generate Pynero Blockchain Binaries
+name: Build Pynero Blockchain
 
 on:
   workflow_dispatch:
 
 jobs:
-  generate-pynero:
+  build-pynero:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout Builder Repo
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Clone Altcoin Generator Tool
+      - name: Install Build Dependencies
         run: |
-          git clone https://github.com/saivnct/altcoin-generator.git generator
+          sudo apt-get update
+          sudo apt-get install -y build-essential libtool autotools-dev automake pkg-config \
+            bsdmainutils python3 libevent-dev libboost-system-dev libboost-filesystem-dev \
+            libboost-test-dev libboost-thread-dev libsqlite3-dev libdb++-dev
 
-      - name: Configure Pynero Parameters
+      - name: Clone Base Codebase
         run: |
-          cd generator
-          # Note: Corrected script filename to use hyphen (altcoin-generator.sh)
-          sed -i 's/COIN_NAME=".*"/COIN_NAME="Pynero"/' altcoin-generator.sh
-          sed -i 's/COIN_UNIT=".*"/COIN_UNIT="PYN"/' altcoin-generator.sh
-          sed -i 's/P2P_PORT=".*"/P2P_PORT="9333"/' altcoin-generator.sh
-          sed -i 's/RPC_PORT=".*"/RPC_PORT="9332"/' altcoin-generator.sh
+          git clone --depth 1 --branch v0.21.2.2 https://github.com/litecoin-project/litecoin.git pynero
 
-      - name: Execute Generator & Mine Pynero Genesis Block
+      - name: Rebrand Codebase to Pynero
         run: |
-          cd generator
-          bash altcoin-generator.sh clone
-          bash altcoin-generator.sh fork
+          cd pynero
+          # Rebrand all references to Pynero and PYN ticker
+          find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.am" -o -name "*.ac" \) -exec sed -i 's/Litecoin/Pynero/g' {} +
+          find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.am" -o -name "*.ac" \) -exec sed -i 's/litecoin/pynero/g' {} +
+          find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.am" -o -name "*.ac" \) -exec sed -i 's/LTC/PYN/g' {} +
 
-      - name: Build Pynero Node Software
+      - name: Build Pynero Software
         run: |
-          cd generator/pynero
+          cd pynero
           ./autogen.sh
-          ./configure --with-incompatible-bdb --disable-tests
+          ./configure --with-incompatible-bdb --disable-tests --disable-bench
           make -j$(nproc)
 
-      - name: Upload Pynero Binaries Artifact
+      - name: Upload Pynero Executables
         uses: actions/upload-artifact@v4
         with:
           name: pynero-linux-binaries
           path: |
-            generator/pynero/src/pynerod
-            generator/pynero/src/pynero-cli
+            pynero/src/pynerod
+            pynero/src/pynero-cli
