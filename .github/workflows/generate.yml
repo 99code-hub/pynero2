@@ -16,7 +16,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential libtool autotools-dev automake pkg-config \
             bsdmainutils python3 libevent-dev libboost-system-dev libboost-filesystem-dev \
-            libboost-test-dev libboost-thread-dev libsqlite3-dev libdb++-dev
+            libboost-test-dev libboost-thread-dev libsqlite3-dev libdb++-dev libfmt-dev
 
       - name: Clone Base Codebase
         run: |
@@ -25,7 +25,6 @@ jobs:
       - name: Rebrand Codebase to Pynero
         run: |
           cd pynero
-          # Rebrand all references to Pynero and PYN ticker
           find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.am" -o -name "*.ac" \) -exec sed -i 's/Litecoin/Pynero/g' {} +
           find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.am" -o -name "*.ac" \) -exec sed -i 's/litecoin/pynero/g' {} +
           find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.am" -o -name "*.ac" \) -exec sed -i 's/LTC/PYN/g' {} +
