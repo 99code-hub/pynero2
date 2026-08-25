@@ -1,4 +1,4 @@
-name: Build Pynero for Fedora
+name: Build Native Pynero for Fedora
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ jobs:
   build-fedora:
     runs-on: ubuntu-22.04
     container:
-      image: fedora:40
+      image: fedora:38
 
     steps:
       - name: Install Fedora Dependencies
@@ -20,19 +20,13 @@ jobs:
         run: |
           git clone --depth 1 --branch v0.21.2.2 https://github.com/litecoin-project/litecoin.git pynero
 
-      - name: Rebrand Codebase & Fix Headers for GCC 14
+      - name: Rebrand Codebase & Rename Files
         run: |
           cd pynero
-
-          # Fix GCC 14 missing <stdexcept> include in support/lockedpool.cpp
-          sed -i '1s/^/#include <stdexcept>\n/' src/support/lockedpool.cpp
-
-          # Rename physical files containing LTC, Litecoin, or litecoin
           find . -depth -name '*LTC*' | while read f; do mv "$f" "${f//LTC/PYN}"; done
           find . -depth -name '*Litecoin*' | while read f; do mv "$f" "${f//Litecoin/Pynero}"; done
           find . -depth -name '*litecoin*' | while read f; do mv "$f" "${f//litecoin/pynero}"; done
 
-          # Rebrand text references
           find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.am" -o -name "*.ac" -o -name "*.txt" \) -exec sed -i 's/Litecoin/Pynero/g' {} +
           find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.am" -o -name "*.ac" -o -name "*.txt" \) -exec sed -i 's/litecoin/pynero/g' {} +
           find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.am" -o -name "*.ac" -o -name "*.txt" \) -exec sed -i 's/LTC/PYN/g' {} +
