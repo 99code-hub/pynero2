@@ -1,0 +1,48 @@
+name: Generate Pynero Blockchain Binaries
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate-pynero:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout Builder Repo
+        uses: actions/checkout@v4
+
+      - name: Clone Altcoin Generator Tool
+        run: |
+          git clone https://github.com/saivnct/altcoin-generator.git generator
+          cd generator
+
+      - name: Configure Pynero Parameters
+        run: |
+          cd generator
+          # Set Pynero name, ticker symbol (PYN), and network ports
+          sed -i 's/COIN_NAME=".*"/COIN_NAME="Pynero"/' altcoin_generator.sh
+          sed -i 's/COIN_UNIT=".*"/COIN_UNIT="PYN"/' altcoin_generator.sh
+          sed -i 's/P2P_PORT=".*"/P2P_PORT="9333"/' altcoin_generator.sh
+          sed -i 's/RPC_PORT=".*"/RPC_PORT="9332"/' altcoin_generator.sh
+
+      - name: Execute Generator & Mine Pynero Genesis Block
+        run: |
+          cd generator
+          bash altcoin_generator.sh clone
+          bash altcoin_generator.sh fork
+
+      - name: Build Pynero Node Software
+        run: |
+          # The generator converts the folder to lowercase coin name
+          cd generator/pynero
+          ./autogen.sh
+          ./configure --with-incompatible-bdb --disable-tests
+          make -j$(nproc)
+
+      - name: Upload Pynero Binaries Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pynero-linux-binaries
+          path: |
+            generator/pynero/src/pynerod
+            generator/pynero/src/pynero-cli
