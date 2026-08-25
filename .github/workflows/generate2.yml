@@ -13,7 +13,8 @@ jobs:
       - name: Install Fedora Dependencies
         run: |
           dnf install -y git gcc-c++ make libtool automake autoconf pkgconfig \
-            fmt-devel libevent-devel boost-devel libdb-cxx-devel bzip2 openssl-devel
+            fmt-devel libevent-devel boost-devel libdb-cxx-devel bzip2 openssl-devel \
+            which procps-ng
 
       - name: Clone Base Codebase
         run: |
