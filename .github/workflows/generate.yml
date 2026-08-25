@@ -1,4 +1,4 @@
-name: Build Independent Pynero Blockchain
+name: Build Portable Pynero Blockchain
 
 on:
   workflow_dispatch:
@@ -11,12 +11,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Install Build Dependencies
+      - name: Install Build Prerequisites
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential libtool autotools-dev automake pkg-config \
-            bsdmainutils python3 libevent-dev libboost-system-dev libboost-filesystem-dev \
-            libboost-test-dev libboost-thread-dev libsqlite3-dev libdb++-dev libfmt-dev
+            bsdmainutils python3 cmake libfmt-dev
 
       - name: Clone Base Codebase
         run: |
@@ -25,12 +24,10 @@ jobs:
       - name: Rebrand Codebase & Rename Files
         run: |
           cd pynero
-          # Rename physical files containing LTC, Litecoin, or litecoin
           find . -depth -name '*LTC*' | while read f; do mv "$f" "${f//LTC/PYN}"; done
           find . -depth -name '*Litecoin*' | while read f; do mv "$f" "${f//Litecoin/Pynero}"; done
           find . -depth -name '*litecoin*' | while read f; do mv "$f" "${f//litecoin/pynero}"; done
 
-          # Rebrand text references inside source code
           find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.am" -o -name "*.ac" -o -name "*.txt" \) -exec sed -i 's/Litecoin/Pynero/g' {} +
           find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.am" -o -name "*.ac" -o -name "*.txt" \) -exec sed -i 's/litecoin/pynero/g' {} +
           find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.am" -o -name "*.ac" -o -name "*.txt" \) -exec sed -i 's/LTC/PYN/g' {} +
@@ -38,30 +35,27 @@ jobs:
       - name: Isolate Pynero Network Parameters
         run: |
           cd pynero/src
-
-          # 1. Update Default P2P and RPC Ports
           sed -i 's/nDefaultPort = 9333/nDefaultPort = 19333/g' chainparams.cpp || true
           sed -i 's/8333/19333/g' chainparams.cpp
           sed -i 's/8332/19332/g' chainparams.cpp
-
-          # 2. Change P2P Magic Bytes (Network Handshake Identifier)
           sed -i 's/0xfb, 0xc0, 0xb6, 0xdb/0xfc, 0xd2, 0xb4, 0xe5/g' chainparams.cpp
-
-          # 3. Clear hardcoded DNS seed nodes (prevents connecting to Litecoin network)
           sed -i '/vSeeds.emplace_back/d' chainparams.cpp
           sed -i '/vSeeds.push_back/d' chainparams.cpp
-
-          # 4. Disable assume-valid check for historical block heights
           sed -i 's/defaultAssumeValid = .*/defaultAssumeValid = uint256();/g' chainparams.cpp
 
-      - name: Build Pynero Software
+      - name: Build Static Dependencies (Boost, BDB, libevent)
+        run: |
+          cd pynero/depends
+          make -j$(nproc) HOST=x86_64-pc-linux-gnu NO_QT=1
+
+      - name: Build Portable Pynero Binaries
         run: |
           cd pynero
           ./autogen.sh
-          ./configure --with-incompatible-bdb --disable-tests --disable-bench
+          ./configure --prefix=$(pwd)/depends/x86_64-pc-linux-gnu --disable-tests --disable-bench
           make -j$(nproc)
 
-      - name: Upload Pynero Executables
+      - name: Upload Portable Executables
         uses: actions/upload-artifact@v4
         with:
           name: pynero-linux-binaries
