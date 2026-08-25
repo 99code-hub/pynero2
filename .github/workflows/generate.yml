@@ -15,7 +15,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential libtool autotools-dev automake pkg-config \
-            bsdmainutils python3 cmake libfmt-dev
+            bsdmainutils python3 cmake libfmt-dev libevent-dev libboost-system-dev \
+            libboost-filesystem-dev libboost-test-dev libboost-thread-dev libsqlite3-dev libdb++-dev
 
       - name: Clone Base Codebase
         run: |
@@ -43,25 +44,17 @@ jobs:
           sed -i '/vSeeds.push_back/d' chainparams.cpp
           sed -i 's/defaultAssumeValid = .*/defaultAssumeValid = uint256();/g' chainparams.cpp
 
-      - name: Patch Boost Package Flags for GCC 11
-        run: |
-          cd pynero/depends
-          # Disable -Wnonnull and deprecated warnings for Boost 1.70 compilation
-          sed -i 's/boost_cxxflags=/boost_cxxflags=-Wno-nonnull -Wno-deprecated-declarations /g' packages/boost.mk || true
-
-      - name: Build Static Dependencies
-        run: |
-          cd pynero/depends
-          make -j$(nproc) HOST=x86_64-pc-linux-gnu NO_QT=1
-
-      - name: Build Portable Pynero Software
+      - name: Build Static-Linked Pynero Software
         run: |
           cd pynero
           ./autogen.sh
-          ./configure --prefix=$(pwd)/depends/x86_64-pc-linux-gnu --disable-tests --disable-bench
+          ./configure --with-incompatible-bdb --disable-tests --disable-bench \
+            LDFLAGS="-static-libgcc -static-libstdc++" \
+            --enable-static
+
           make -j$(nproc)
 
-      - name: Upload Portable Executables
+      - name: Upload Pynero Binaries
         uses: actions/upload-artifact@v4
         with:
           name: pynero-linux-binaries
