@@ -22,12 +22,19 @@ jobs:
         run: |
           git clone --depth 1 --branch v0.21.2.2 https://github.com/litecoin-project/litecoin.git pynero
 
-      - name: Rebrand Codebase to Pynero
+      - name: Rebrand Codebase & Rename Files
         run: |
           cd pynero
-          find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.am" -o -name "*.ac" \) -exec sed -i 's/Litecoin/Pynero/g' {} +
-          find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.am" -o -name "*.ac" \) -exec sed -i 's/litecoin/pynero/g' {} +
-          find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.am" -o -name "*.ac" \) -exec sed -i 's/LTC/PYN/g' {} +
+
+          # 1. Rename physical files on disk containing LTC, Litecoin, or litecoin
+          find . -depth -name '*LTC*' | while read f; do mv "$f" "${f//LTC/PYN}"; done
+          find . -depth -name '*Litecoin*' | while read f; do mv "$f" "${f//Litecoin/Pynero}"; done
+          find . -depth -name '*litecoin*' | while read f; do mv "$f" "${f//litecoin/pynero}"; done
+
+          # 2. Rebrand text references inside all source files and makefiles
+          find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.am" -o -name "*.ac" -o -name "*.txt" \) -exec sed -i 's/Litecoin/Pynero/g' {} +
+          find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.am" -o -name "*.ac" -o -name "*.txt" \) -exec sed -i 's/litecoin/pynero/g' {} +
+          find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.am" -o -name "*.ac" -o -name "*.txt" \) -exec sed -i 's/LTC/PYN/g' {} +
 
       - name: Build Pynero Software
         run: |
