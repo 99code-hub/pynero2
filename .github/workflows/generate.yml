@@ -3,6 +3,9 @@ name: Build Portable Pynero Blockchain
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-pynero:
     runs-on: ubuntu-22.04
@@ -54,10 +57,21 @@ jobs:
 
           make -j$(nproc)
 
+      - name: Commit Binaries to bin/ Directory
+        run: |
+          mkdir -p bin
+          cp pynero/src/pynerod bin/
+          cp pynero/src/pynero-cli bin/
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add bin/pynerod bin/pynero-cli
+          git commit -m "Automated build: update binaries in bin/" || echo "No changes to commit"
+          git push
+
       - name: Upload Pynero Binaries
         uses: actions/upload-artifact@v4
         with:
           name: pynero-linux-binaries
           path: |
-            pynero/src/pynerod
-            pynero/src/pynero-cli
+            bin/pynerod
+            bin/pynero-cli
