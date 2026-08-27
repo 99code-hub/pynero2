@@ -33,10 +33,9 @@ jobs:
           find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.am" -o -name "*.ac" -o -name "*.txt" \) -exec sed -i 's/litecoin/pynero/g' {} +
           find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.am" -o -name "*.ac" -o -name "*.txt" \) -exec sed -i 's/LTC/PYN/g' {} +
 
-      - name: Isolate Pynero Parameters & Patch GCC 13 Headers
+      - name: Isolate Pynero Parameters
         run: |
           cd pynero/src
-          # 1. Update network parameters
           sed -i 's/nDefaultPort = 9333/nDefaultPort = 19333/g' chainparams.cpp || true
           sed -i 's/8333/19333/g' chainparams.cpp
           sed -i 's/8332/19332/g' chainparams.cpp
@@ -45,14 +44,12 @@ jobs:
           sed -i '/vSeeds.push_back/d' chainparams.cpp
           sed -i 's/defaultAssumeValid = .*/defaultAssumeValid = uint256();/g' chainparams.cpp
 
-          # 2. Inject missing <stdexcept> header required by GCC 13+
-          sed -i '1i#include <stdexcept>' support/lockedpool.cpp
-
       - name: Build Pynero Software
         run: |
           cd pynero
           ./autogen.sh
-          ./configure --with-incompatible-bdb --disable-tests --disable-bench CXXFLAGS="-Wno-dangling-reference -O2"
+          ./configure --with-incompatible-bdb --disable-tests --disable-bench \
+            CXXFLAGS="-include cstdint -include stdexcept -Wno-dangling-reference -O2"
           make -j$(nproc)
 
       - name: Upload Pynero Binaries
