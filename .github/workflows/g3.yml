@@ -1,4 +1,4 @@
-name: Build for Ubuntu 24.04
+name: Build v.g3 for Ubuntu 24.04
 
 on:
   workflow_dispatch:
@@ -53,15 +53,15 @@ jobs:
           cd pynero
           ./autogen.sh
 
-          # Force global injection of standard C++ headers removed from transitive inclusion in GCC 13+
-          # Suppress GCC 13 compiler warnings that halt modern builds
+          # Keep CFLAGS clean (-O2) so C compiler checks pass in sub-modules like univalue.
+          # C++ specific header injections belong exclusively in CXXFLAGS.
           ./configure --with-incompatible-bdb --disable-tests --disable-bench --with-gui=no \
-            CXXFLAGS="-include cstdint -include stdexcept -include cstddef -include string -include memory -Wno-dangling-reference -Wno-subobject-linkage -Wno-array-bounds -O2" \
-            CFLAGS="-include cstdint -include stdexcept -include cstddef -O2"
+            CFLAGS="-O2" \
+            CXXFLAGS="-include cstdint -include stdexcept -include cstddef -include string -include memory -Wno-dangling-reference -Wno-subobject-linkage -Wno-array-bounds -O2"
 
           make -j$(nproc)
 
-      - name: Verify Compiled Binaries Exists
+      - name: Verify Compiled Binaries Exist
         run: |
           test -f pynero/src/pynerod || (echo "Error: pynerod binary not found!" && exit 1)
           test -f pynero/src/pynero-cli || (echo "Error: pynero-cli binary not found!" && exit 1)
